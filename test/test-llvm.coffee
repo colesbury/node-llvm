@@ -99,7 +99,7 @@ describe "IRBuilder", ->
 		assert.equal x.dump(), "  %x = load i32* inttoptr (i32 123 to i32*)"
 
 	it 'creates store ops', ->
-		assert.equal b.createStore(p, v).dump(), "  store i32* inttoptr (i32 123 to i32*), i32 123"
+		assert.equal b.createStore(v, p).dump(), "  store i32 123, i32* inttoptr (i32 123 to i32*)"
 
 	it "creates binary ops", ->
 		assert.equal b.createNSWAdd(v, x).dump(), "  %1 = add nsw i32 123, %x"
