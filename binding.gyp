@@ -18,6 +18,8 @@
         './src/executionengine.cc',
         './src/functionpassmanager.cc',
         './src/instructions.cc',
+        './src/globals.cc',
+        './src/constants.cc',
       ],
       'cflags': [
         '-O3',

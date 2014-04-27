@@ -34,8 +34,9 @@ static Handle<Value> getFunctionType(const Arguments& args){
 	(void) self;
 	UNWRAP_ARG(pType, retType, 0);
 	ARRAY_UNWRAP_ARG(pType, llvm::Type, paramTypes, 1);
+	BOOL_ARG(isVarArg, 2);
 
-	auto tp = llvm::FunctionType::get(retType, paramTypes, false);
+	auto tp = llvm::FunctionType::get(retType, paramTypes, isVarArg);
 	Handle<Object> v8tp = Handle<Object>::Cast(pFunctionType.create(tp, args.This()));
 	setConst(v8tp, "returnType", args[0]);
 	setConst(v8tp, "paramTypes", args[1]);

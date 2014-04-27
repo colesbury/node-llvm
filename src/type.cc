@@ -13,6 +13,14 @@ static Handle<Value> getPointerTo(const Arguments& args){
 	return scope.Close(pType.create(self->getPointerTo(), ctx));
 }
 
+static Handle<Value> dump(const Arguments& args){
+	ENTER_METHOD(pType, 0);
+	std::string s;
+	llvm::raw_string_ostream stream(s);
+	self->print(stream);
+	return scope.Close(String::New(stream.str().c_str()));
+}
+
 static Handle<Value> intConst(const Arguments& args){
 	ENTER_METHOD(pIntegerType, 1);
 	llvm::Value* v;
@@ -46,15 +54,27 @@ static Handle<Value> fpConst(const Arguments& args){
 	return scope.Close(pValue.create(v, ctx));
 }
 
+static Handle<Value> getArrayType(const Arguments& args){
+	ENTER_METHOD(pArrayType, 2);
+	UNWRAP_ARG(pType, elementType, 0);
+	INT_ARG(numElements, 1);
+	auto type = llvm::ArrayType::get(elementType, numElements);
+	return scope.Close(pArrayType.create(type));
+}
 
 
 static void init(Handle<Object> target){
 	pType.init(&typeConstructor);
 	pType.addMethod("_getPointerTo", &getPointerTo);
+	pType.addMethod("dump", &dump);
 
 	pIntegerType.init(&typeConstructor);
 	pIntegerType.inherit(pType);
 	pIntegerType.addMethod("const", &intConst);
+
+	pArrayType.init(&typeConstructor);
+	pArrayType.inherit(pType);
+	pArrayType.addStaticMethod("get", &getArrayType);
 
 	pFPType.init(&typeConstructor);
 	pFPType.inherit(pType);
@@ -63,5 +83,6 @@ static void init(Handle<Object> target){
 
 Proto<llvm::Type> pType("Type", &init);
 Proto<llvm::IntegerType> pIntegerType("IntegerType");
+Proto<llvm::ArrayType> pArrayType("ArrayType");
 // Does not exist in LLVM, but we make use it for .const
 Proto<llvm::Type> pFPType("FPType");

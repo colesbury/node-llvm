@@ -30,12 +30,17 @@ extern Proto<IRBuilder>         pIRBuilder;
 extern Proto<llvm::Function>    pFunction;
 extern Proto<llvm::Type> 		pType;
 extern Proto<llvm::IntegerType> pIntegerType;
-extern Proto<llvm::Type> 		pFPType;
+extern Proto<llvm::Type>        pFPType;
+extern Proto<llvm::ArrayType>   pArrayType;
 extern Proto<llvm::FunctionType> pFunctionType;
 extern Proto<llvm::ExecutionEngine> pExecutionEngine;
 extern Proto<llvm::FunctionPassManager> pFunctionPassManager;
 extern Proto<llvm::PHINode> pPHINode;
 extern Proto<llvm::SwitchInst> pSwitchInst;
+extern Proto<llvm::Constant>          pConstant;
+extern Proto<llvm::ConstantExpr>      pConstantExpr;
+extern Proto<llvm::ConstantDataArray> pConstantDataArray;
+extern Proto<llvm::GlobalVariable> pGlobalVariable;
 
 // Common constructor for Value and subclasses
 Handle<Value> valueConstructor(const Arguments& args);
