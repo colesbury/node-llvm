@@ -1,13 +1,21 @@
 #include "node-llvm.h"
 
 static Handle<Value> ModuleConstructor(const Arguments& args){
-	ENTER_CONSTRUCTOR(2);
-	STRING_ARG(name, 0);
-	UNWRAP_ARG(pContext, context, 1);
-	setConst(args.This(), "context", args[1]);
+	ENTER_CONSTRUCTOR(1);
 
-	pModule.wrap(args.This(), new llvm::Module(name, *context));
+	llvm::Module* module;
+	if (args[0]->IsExternal()) {
+		module = static_cast<llvm::Module*>(External::Unwrap(args[0]));
+		setConst(args.This(), "context", pContext.create(&module->getContext()));
+	} else {
+		CHECK_N_ARGS(2);
+		STRING_ARG(name, 0);
+		UNWRAP_ARG(pContext, context, 1);
+		setConst(args.This(), "context", args[1]);
+		module = new llvm::Module(name, *context);
+	}
 
+	pModule.wrap(args.This(), module);
 	return scope.Close(args.This());
 }
 

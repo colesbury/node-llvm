@@ -47,7 +47,7 @@
       ],
       "libraries": [
         "<!@(<(llvm_config) --ldflags)",
-        "<!@(<(llvm_config) --libs core jit native)"
+        "<!@(<(llvm_config) --libs all)"
       ]
     }
   ]

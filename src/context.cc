@@ -1,4 +1,6 @@
 #include "node-llvm.h"
+#include <llvm/Bitcode/ReaderWriter.h>
+#include <llvm/Support/MemoryBuffer.h>
 
 static Handle<Value> contextConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR_POINTER(pContext, 2);
@@ -44,10 +46,26 @@ static Handle<Value> getFunctionType(const Arguments& args){
 	return scope.Close(v8tp);
 }
 
+static Handle<Value> xxxLoadHeader(const Arguments& args){
+	ENTER_METHOD(pContext, 0);
+
+    std::string error;
+
+    llvm::OwningPtr<llvm::MemoryBuffer> buffer;
+    if (llvm::error_code err = llvm::MemoryBuffer::getFile("runtime/runtime.bc", buffer)) {
+    	llvm::report_fatal_error(err.message());
+    }
+
+    llvm::Module *m = llvm::ParseBitcodeFile(buffer.get(), *self, &error);
+    printf("error?: %s", error.c_str());
+    return scope.Close(pModule.create(m));
+}
+
 static void init(Handle<Object> target){
 	pContext.init(&contextConstructor);
 	pContext.addMethod("getFunctionType", &getFunctionType);
 	pContext.addMethod("getIntNTy", &getIntNTy);
+	pContext.addMethod("xxxLoadHeader", &xxxLoadHeader);
 }
 
 
