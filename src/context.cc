@@ -49,15 +49,18 @@ static Handle<Value> getFunctionType(const Arguments& args){
 static Handle<Value> xxxLoadHeader(const Arguments& args){
 	ENTER_METHOD(pContext, 0);
 
-    std::string error;
+    std::string Error;
 
     llvm::OwningPtr<llvm::MemoryBuffer> buffer;
     if (llvm::error_code err = llvm::MemoryBuffer::getFile("runtime/runtime.bc", buffer)) {
     	llvm::report_fatal_error(err.message());
     }
 
-    llvm::Module *m = llvm::ParseBitcodeFile(buffer.get(), *self, &error);
-    printf("error?: %s", error.c_str());
+    llvm::Module *m = llvm::ParseBitcodeFile(buffer.get(), *self, &Error);
+    if (!Error.empty()) {
+	    printf("ERROR: %s\n", Error.c_str());
+    }
+
     return scope.Close(pModule.create(m));
 }
 

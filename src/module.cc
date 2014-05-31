@@ -54,6 +54,13 @@ static Handle<Value> getOrInsertGlobal(const Arguments& args){
 	return scope.Close(pGlobalVariable.create(global, args.This(), args[1]));
 }
 
+static Handle<Value> getTypeByName(const Arguments& args){
+	ENTER_METHOD(pModule, 1);
+	STRING_ARG(name, 0);
+	auto type = self->getTypeByName(name);
+	return scope.Close(pType.create(type));
+}
+
 static Handle<Value> getFunctionList(const Arguments& args){
 	ENTER_METHOD(pModule, 0);
 
@@ -77,6 +84,22 @@ static Handle<Value> dump(const Arguments& args){
 	return scope.Close(String::New(stream.str().c_str()));
 }
 
+static Handle<Value> writeBitcodeToFile(const Arguments& args){
+	ENTER_METHOD(pModule, 1);
+	STRING_ARG(filename, 0);
+
+	std::string Err;
+	llvm::raw_fd_ostream out(filename.c_str(), Err);
+
+	if (!Err.empty()) {
+
+	}
+
+	llvm::WriteBitcodeToFile(self, out);
+
+	return scope.Close(Undefined());
+}
+
 static void init(Handle<Object> target){
 	pModule.init(&ModuleConstructor);
 
@@ -90,10 +113,14 @@ static void init(Handle<Object> target){
 	pModule.addMethod("getNamedGlobal", &getNamedGlobal);
 	pModule.addMethod("getOrInsertGlobal", &getOrInsertGlobal);
 
+	pModule.addMethod("getTypeByName", &getTypeByName);
+
 //	pModule.addMethod("getGlobalList")
 	pModule.addMethod("getFunctionList", &getFunctionList);
 
 	pModule.addMethod("dump", &dump);
+
+	pModule.addMethod("writeBitcodeToFile", &writeBitcodeToFile);
 }
 
 Proto<llvm::Module> pModule("Module", &init);

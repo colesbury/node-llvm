@@ -14,15 +14,15 @@ public:
 
 		pIRBuilder.addMethod("createBr", &createBr);
 		pIRBuilder.addMethod("createCondBr", &createCondBr);
-		
+
 		pIRBuilder.addMethod("createSwitch", &createSwitch); // special type
 		//pIRBuilder.addMethod("createIndirectBr", &createIndirectBr);
-		
+
 		pIRBuilder.addMethod("createUnreachable", &createUnreachable);
 
 		//pIRBuilder.addMethod("createInvoke", &createInvoke);
 		pIRBuilder.addMethod("createCall", &createCall);
-		
+
 		pIRBuilder.addMethod("createAlloca", &createAlloca);
 		pIRBuilder.addMethod("createLoad", &createLoad); // + aligned, volatile
 		pIRBuilder.addMethod("createStore", &createStore); // + aligned, volatile
@@ -31,6 +31,9 @@ public:
 
 		pIRBuilder.addMethod("createPHI", &createPHI);
 		pIRBuilder.addMethod("createSelect", &createSelect);
+
+		pIRBuilder.addMethod("createGlobalString", &createGlobalString);
+		pIRBuilder.addMethod("createGlobalStringPtr", &createGlobalStringPtr);
 
 		// bool HasNUW=false, bool HasNSW=false
 		pIRBuilder.addMethod("createAdd", 	&BinOpWrMethod<&IRBuilder::CreateAdd> );
@@ -43,7 +46,7 @@ public:
 		pIRBuilder.addMethod("createSDiv", 	&BinOpExMethod<&IRBuilder::CreateSDiv> );
 		pIRBuilder.addMethod("createLShr", 	&BinOpExMethod<&IRBuilder::CreateLShr> );
 		pIRBuilder.addMethod("createAShr", 	&BinOpExMethod<&IRBuilder::CreateAShr> );
-		
+
 		pIRBuilder.addMethod("createNSWAdd", 	&BinOpMethod<&IRBuilder::CreateNSWAdd> );
 		pIRBuilder.addMethod("createNUWAdd", 	&BinOpMethod<&IRBuilder::CreateNUWAdd> );
 		pIRBuilder.addMethod("createFAdd", 		&BinOpMDMethod<&IRBuilder::CreateFAdd> ); // MDNode *FPMathTag=0)
@@ -98,7 +101,7 @@ public:
 
 		//CreateICmp (CmpInst::Predicate P, Value *LHS, Value *RHS, const Twine &Name="")
 		//CreateFCmp (CmpInst::Predicate P, Value *LHS, Value *RHS, const Twine &Name="")
-		
+
 		pIRBuilder.addMethod("createTrunc", &CastOpMethod<&IRBuilder::CreateTrunc> );
 		pIRBuilder.addMethod("createZExt", &CastOpMethod<&IRBuilder::CreateZExt> );
 		pIRBuilder.addMethod("createSExt", &CastOpMethod<&IRBuilder::CreateSExt> );
@@ -216,6 +219,7 @@ public:
 		UNWRAP_ARG(pValue, fn, 0);
 		ARRAY_UNWRAP_ARG(pValue, llvm::Value, fnargs, 1);
 		STRING_ARG(name, 2);
+		printf("Creating call..\n");
 		RETURN_INSTR(pValue, self->CreateCall(fn, fnargs, name));
 	}
 
@@ -233,6 +237,26 @@ public:
 		UNWRAP_ARG(pValue, vfalse, 2);
 		STRING_ARG(name, 3);
 		RETURN_INSTR(pValue, self->CreateSelect(cond, vtrue, vfalse, name));
+	}
+
+	static Handle<Value> createGlobalString(const Arguments& args){
+		ENTER_METHOD(pIRBuilder, 1);
+		STRING_ARG(value, 0);
+		STRING_ARG(name, 1);
+		if (args.Length() < 2) {
+			name = "";
+		}
+		RETURN_INSTR(pValue, self->CreateGlobalString(value, name));
+	}
+
+	static Handle<Value> createGlobalStringPtr(const Arguments& args){
+		ENTER_METHOD(pIRBuilder, 1);
+		STRING_ARG(value, 0);
+		STRING_ARG(name, 1);
+		if (args.Length() < 2) {
+			name = "";
+		}
+		RETURN_INSTR(pValue, self->CreateGlobalStringPtr(value, name));
 	}
 
 	typedef llvm::Value* (IRBuilder::*UnaryOpFn)(llvm::Value*, const llvm::Twine&);

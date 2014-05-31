@@ -1,8 +1,15 @@
 #include "node-llvm.h"
 
+static Handle<Value> getNullValue(const Arguments& args){
+    ENTER_METHOD(pConstant, 1);
+    UNWRAP_ARG(pType, type, 0);
+    return scope.Close(pConstant.create(llvm::Constant::getNullValue(type)));
+}
+
 static void initConstant(Handle<Object> target){
     pConstant.init(&valueConstructor);
     pConstant.inherit(pValue);
+    pConstant.addStaticMethod("getNullValue", &getNullValue);
 }
 
 Proto<llvm::Constant> pConstant("Constant", &initConstant);

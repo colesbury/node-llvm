@@ -17,6 +17,7 @@ using namespace v8;
 #include "llvm/ExecutionEngine/ExecutionEngine.h"
 #include "llvm/PassManager.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/Bitcode/ReaderWriter.h"
 
 #include "protobuilder.h"
 
