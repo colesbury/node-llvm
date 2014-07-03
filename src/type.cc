@@ -47,7 +47,7 @@ static Handle<Value> fpConst(const Arguments& args){
 		STRING_ARG(val, 0);
 		v = llvm::ConstantFP::get(self, val);
 	}else{
-		INT_ARG(val, 0);
+		DOUBLE_ARG(val, 0);
 		v = llvm::ConstantFP::get(self, val);
 	}
 	auto ctx = args.This()->Get(String::NewSymbol("context"));
