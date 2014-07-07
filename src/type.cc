@@ -23,7 +23,7 @@ static Handle<Value> dump(const Arguments& args){
 
 static Handle<Value> intConst(const Arguments& args){
 	ENTER_METHOD(pIntegerType, 1);
-	llvm::Value* v;
+	llvm::Constant* v;
 	if (args[0]->IsString()){
 		STRING_ARG(val, 0);
 		int radix = 10;
@@ -36,13 +36,13 @@ static Handle<Value> intConst(const Arguments& args){
 		v = llvm::ConstantInt::getSigned(self, val);
 	}
 
-	auto ctx = args.This()->Get(String::NewSymbol("context"));
-	return scope.Close(pValue.create(v, ctx));
+	// auto ctx = args.This()->Get(String::NewSymbol("context"));
+	return scope.Close(pConstant.create(v));
 }
 
 static Handle<Value> fpConst(const Arguments& args){
 	ENTER_METHOD(pFPType, 1);
-	llvm::Value* v;
+	llvm::Constant* v;
 	if (args[0]->IsString()){
 		STRING_ARG(val, 0);
 		v = llvm::ConstantFP::get(self, val);
@@ -50,8 +50,8 @@ static Handle<Value> fpConst(const Arguments& args){
 		DOUBLE_ARG(val, 0);
 		v = llvm::ConstantFP::get(self, val);
 	}
-	auto ctx = args.This()->Get(String::NewSymbol("context"));
-	return scope.Close(pValue.create(v, ctx));
+	// auto ctx = args.This()->Get(String::NewSymbol("context"));
+	return scope.Close(pConstant.create(v));
 }
 
 static Handle<Value> getArrayType(const Arguments& args){
