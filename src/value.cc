@@ -25,10 +25,17 @@ static Handle<Value> dump(const Arguments& args){
 	return scope.Close(String::New(stream.str().c_str()));
 }
 
+static Handle<Value> getType(const Arguments& args){
+	ENTER_METHOD(pValue, 0);
+	auto type = self->getType();
+	return scope.Close(pType.create(type));
+}
+
 static void init(Handle<Object> target){
 	pValue.init(&valueConstructor);
 
 	pValue.addMethod("dump", &dump);
+	pValue.addMethod("getType", &getType);
 
 	pValue.addAccessor("name", &getValueName, &setValueName);
 }

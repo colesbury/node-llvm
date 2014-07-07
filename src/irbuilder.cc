@@ -7,6 +7,7 @@ public:
 		pIRBuilder.init(&IRBConstructor);
 
 		pIRBuilder.addMethod("setInsertPoint", &setInsertPoint);
+		pIRBuilder.addMethod("getInsertBlock", &getInsertBlock);
 
 		pIRBuilder.addMethod("createRet", &createRet);
 		pIRBuilder.addMethod("createRetVoid", &createRetVoid);
@@ -142,6 +143,12 @@ public:
 		setConst(args.This(), "insertBlock", args[0]);
 		self->SetInsertPoint(p);
 		return scope.Close(args[0]);
+	}
+
+	static Handle<Value> getInsertBlock(const Arguments& args){
+		ENTER_METHOD(pIRBuilder, 0);
+		llvm::BasicBlock* block = self->GetInsertBlock();
+		return scope.Close(pBasicBlock.create(Undefined(), External::New(block)));
 	}
 
 	#define RETURN_INSTR(TP, VAL) \
