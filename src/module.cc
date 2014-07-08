@@ -54,6 +54,28 @@ static Handle<Value> getOrInsertGlobal(const Arguments& args){
 	return scope.Close(pGlobalVariable.create(global, args.This(), args[1]));
 }
 
+static Handle<Value> insertGlobal(const Arguments& args) {
+	ENTER_METHOD(pModule, 1);
+
+	UNWRAP_ARG(pType, type, 0);
+	STRING_ARG(name, 1);
+	BOOL_ARG(isConstant, 2);
+	Constant* initializer = nullptr;
+
+	auto linkage = llvm::GlobalValue::LinkageTypes::InternalLinkage;
+	if (args.Length() > 3) {
+		INT_ARG(linkageInt, 3);
+		linkage = static_cast<llvm::GlobalValue::LinkageTypes>(linkageInt);
+	}
+	if (args.Length() > 4) {
+		UNWRAP_ARG(pConstant, initializer_, 4);
+		initializer = initializer_;
+	}
+
+	auto global = new llvm::GlobalVariable(*self, type, isConstant, linkage, initializer, name);
+	return scope.Close(pGlobalVariable.create(global, args.This()));
+}
+
 static Handle<Value> getTypeByName(const Arguments& args){
 	ENTER_METHOD(pModule, 1);
 	STRING_ARG(name, 0);
@@ -112,6 +134,7 @@ static void init(Handle<Object> target){
 
 	pModule.addMethod("getNamedGlobal", &getNamedGlobal);
 	pModule.addMethod("getOrInsertGlobal", &getOrInsertGlobal);
+	pModule.addMethod("insertGlobal", &insertGlobal);
 
 	pModule.addMethod("getTypeByName", &getTypeByName);
 
