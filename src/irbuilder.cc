@@ -139,9 +139,13 @@ public:
 
 	static Handle<Value> setInsertPoint(const Arguments& args){
 		ENTER_METHOD(pIRBuilder, 1);
-		UNWRAP_ARG(pBasicBlock, p, 0); // TODO: could also be Instruction
-		setConst(args.This(), "insertBlock", args[0]);
-		self->SetInsertPoint(p);
+		UNWRAP_ARG(pValue, p, 0);
+		if (llvm::isa<llvm::Instruction>(p)) {
+			self->SetInsertPoint(llvm::cast<llvm::Instruction>(p));
+		} else if (llvm::isa<llvm::BasicBlock>(p)) {
+			setConst(args.This(), "insertBlock", args[0]);
+			self->SetInsertPoint(llvm::cast<llvm::BasicBlock>(p));
+		}
 		return scope.Close(args[0]);
 	}
 

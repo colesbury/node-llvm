@@ -18,9 +18,17 @@ static Handle<Value> BBConstructor(const Arguments& args){
 	return scope.Close(args.This());
 }
 
+static Handle<Value> getTerminator(const Arguments& args){
+    ENTER_METHOD(pBasicBlock, 0);
+    return scope.Close(pValue.create(self->getTerminator()));
+}
+
 static void init(Handle<Object> target){
 	pBasicBlock.init(&BBConstructor);
 	pBasicBlock.inherit(pValue);
+    pBasicBlock.addMethod("getTerminator", &getTerminator);
+
+	// getTerminator
 }
 
 Proto<llvm::BasicBlock> pBasicBlock("BasicBlock", &init);

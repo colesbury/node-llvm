@@ -53,6 +53,13 @@ static Handle<Value> addBasicBlock(const Arguments& args){
 	return scope.Close(args[0]);
 }
 
+static Handle<Value> getEntryBlock(const Arguments& args){
+	ENTER_METHOD(pFunction, 0);
+	auto ctx = args.This()->Get(String::NewSymbol("context"));
+	auto& BB = self->getEntryBlock();
+	return scope.Close(pBasicBlock.create(ctx, External::New(&BB)));
+}
+
 static Handle<Value> dump(const Arguments& args){
 	ENTER_METHOD(pFunction, 0);
 	std::string s;
@@ -66,6 +73,7 @@ static void init(Handle<Object> target){
 	pFunction.inherit(pValue);
 
 	pFunction.addMethod("_addBasicBlock", &addBasicBlock);
+	pFunction.addMethod("getEntryBlock", &getEntryBlock);
 	pFunction.addMethod("dump", &dump);
 }
 

@@ -60,7 +60,7 @@ static Handle<Value> insertGlobal(const Arguments& args) {
 	UNWRAP_ARG(pType, type, 0);
 	STRING_ARG(name, 1);
 	BOOL_ARG(isConstant, 2);
-	Constant* initializer = nullptr;
+	llvm::Constant* initializer = nullptr;
 
 	auto linkage = llvm::GlobalValue::LinkageTypes::InternalLinkage;
 	if (args.Length() > 3) {
