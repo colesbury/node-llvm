@@ -46,13 +46,14 @@ static Handle<Value> getFunctionType(const Arguments& args){
 	return scope.Close(v8tp);
 }
 
-static Handle<Value> xxxLoadHeader(const Arguments& args){
-	ENTER_METHOD(pContext, 0);
+static Handle<Value> loadModule(const Arguments& args){
+	ENTER_METHOD(pContext, 1);
+	STRING_ARG(fileName, 0);
 
     std::string Error;
 
     llvm::OwningPtr<llvm::MemoryBuffer> buffer;
-    if (llvm::error_code err = llvm::MemoryBuffer::getFile("runtime/runtime.bc", buffer)) {
+    if (llvm::error_code err = llvm::MemoryBuffer::getFile(fileName, buffer)) {
     	llvm::report_fatal_error(err.message());
     }
 
@@ -68,7 +69,7 @@ static void init(Handle<Object> target){
 	pContext.init(&contextConstructor);
 	pContext.addMethod("getFunctionType", &getFunctionType);
 	pContext.addMethod("getIntNTy", &getIntNTy);
-	pContext.addMethod("xxxLoadHeader", &xxxLoadHeader);
+	pContext.addMethod("loadModule", &loadModule);
 }
 
 
