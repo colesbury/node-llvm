@@ -230,7 +230,6 @@ public:
 		UNWRAP_ARG(pValue, fn, 0);
 		ARRAY_UNWRAP_ARG(pValue, llvm::Value, fnargs, 1);
 		STRING_ARG(name, 2);
-		printf("Creating call..\n");
 		RETURN_INSTR(pValue, self->CreateCall(fn, fnargs, name));
 	}
 
