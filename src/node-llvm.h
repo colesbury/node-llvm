@@ -5,6 +5,7 @@
 #include <node_version.h>
 #include <node_buffer.h>
 #include <uv.h>
+#include <unordered_map>
 
 using namespace node;
 using namespace v8;

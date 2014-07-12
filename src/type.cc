@@ -1,7 +1,15 @@
 #include "node-llvm.h"
 
+static std::unordered_map<llvm::Type*, Persistent<Value>> types;
+
 static Handle<Value> typeConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR_POINTER(pType, 2);
+	auto it = types.find(self);
+	if (it != types.end()) {
+		return scope.Close(it->second);
+	} else {
+		types[self] = Persistent<Value>::New(args.This());
+	}
 	setConst(args.This(), "context", args[1]);
 	return scope.Close(args.This());
 }
@@ -62,6 +70,17 @@ static Handle<Value> getArrayType(const Arguments& args){
 	return scope.Close(pArrayType.create(type));
 }
 
+static Handle<Value> getNumParams(const Arguments& args){
+	ENTER_METHOD(pFunctionType, 0);
+	return scope.Close(Integer::New(self->getNumParams()));
+}
+
+static Handle<Value> getParamType(const Arguments& args){
+	ENTER_METHOD(pFunctionType, 1);
+	INT_ARG(idx, 0);
+	llvm::Type* type = self->getParamType(idx);
+	return scope.Close(pType.create(type));
+}
 
 static void init(Handle<Object> target){
 	pType.init(&typeConstructor);
@@ -79,6 +98,11 @@ static void init(Handle<Object> target){
 	pFPType.init(&typeConstructor);
 	pFPType.inherit(pType);
 	pFPType.addMethod("const", &fpConst);
+
+	pFunctionType.init(&typeConstructor);
+	pFunctionType.inherit(pType);
+    pFunctionType.addMethod("getNumParams", &getNumParams);
+    pFunctionType.addMethod("getParamType", &getParamType);
 }
 
 Proto<llvm::Type> pType("Type", &init);
@@ -86,3 +110,4 @@ Proto<llvm::IntegerType> pIntegerType("IntegerType");
 Proto<llvm::ArrayType> pArrayType("ArrayType");
 // Does not exist in LLVM, but we make use it for .const
 Proto<llvm::Type> pFPType("FPType");
+Proto<llvm::FunctionType> pFunctionType("FunctionType");
