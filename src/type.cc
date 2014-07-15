@@ -82,6 +82,15 @@ static Handle<Value> getParamType(const Arguments& args){
 	return scope.Close(pType.create(type));
 }
 
+static Handle<Value> getFunctionType(const Arguments& args){
+	ENTER_METHOD(pFunctionType, 2);
+	UNWRAP_ARG(pType, result, 0);
+	ARRAY_UNWRAP_ARG(pType, llvm::Type, params, 1);
+	BOOL_ARG(isVarArg, 2);
+	auto type = llvm::FunctionType::get(result, params, isVarArg);
+	return scope.Close(pFunctionType.create(type));
+}
+
 static void init(Handle<Object> target){
 	pType.init(&typeConstructor);
 	pType.addMethod("_getPointerTo", &getPointerTo);
@@ -103,6 +112,7 @@ static void init(Handle<Object> target){
 	pFunctionType.inherit(pType);
     pFunctionType.addMethod("getNumParams", &getNumParams);
     pFunctionType.addMethod("getParamType", &getParamType);
+    pFunctionType.addStaticMethod("get", &getFunctionType);
 }
 
 Proto<llvm::Type> pType("Type", &init);

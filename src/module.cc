@@ -34,8 +34,11 @@ static Handle<Value> getOrInsertFunction(const Arguments& args){
 	ENTER_METHOD(pModule, 2);
 	STRING_ARG(name, 0);
 	UNWRAP_ARG(pFunctionType, type, 1);
-	auto fn = static_cast<llvm::Function*>(self->getOrInsertFunction(name, type));
-	return scope.Close(pFunction.create(fn, args.This(), args[1]));
+	llvm::Constant* r = self->getOrInsertFunction(name, type);
+	if (auto fn = llvm::dyn_cast<llvm::Function>(r)) {
+		return scope.Close(pFunction.create(fn, args.This(), args[1]));
+	}
+	return scope.Close(pConstant.create(r));
 }
 
 static Handle<Value> getNamedGlobal(const Arguments& args){
@@ -89,13 +92,41 @@ static Handle<Value> getFunctionList(const Arguments& args){
 	llvm::Module::FunctionListType& list = self->getFunctionList();
 	Handle<Array> array = Array::New(list.size());
 	unsigned idx = 0;
-    for (auto it = list.begin(), it_end = list.end(); it != it_end; ++it) {
-    	llvm::Function* fun = it;
-    	array->Set(idx, pFunction.create(fun, args.This()));
-    	++idx;
-    }
+	for (auto it = list.begin(), it_end = list.end(); it != it_end; ++it) {
+		llvm::Function* fun = it;
+		array->Set(idx, pFunction.create(fun, args.This()));
+		++idx;
+	}
 
 	return scope.Close(array);
+}
+
+static llvm::Intrinsic::ID getIntrinsicIDByName(const std::string& name)
+{
+	const char* Name = name.c_str();
+	unsigned Len = name.length();
+
+	using namespace llvm;
+
+#define GET_FUNCTION_RECOGNIZER
+#include "llvm/IR/Intrinsics.gen"
+#undef GET_FUNCTION_RECOGNIZER
+
+	return llvm::Intrinsic::ID::not_intrinsic;
+}
+
+static Handle<Value> getIntrinsic(const Arguments& args){
+	ENTER_METHOD(pModule, 1);
+
+	STRING_ARG(name, 0);
+	llvm::ArrayRef<llvm::Type*> tys = llvm::None;
+	if (args.Length() > 1) {
+		ARRAY_UNWRAP_ARG(pType, llvm::Type, tys, 1);
+	}
+
+	auto id = getIntrinsicIDByName(name);
+	auto fun = llvm::Intrinsic::getDeclaration(self, id, tys);
+	return scope.Close(pFunction.create(fun, args.This()));
 }
 
 static Handle<Value> dump(const Arguments& args){
@@ -140,6 +171,8 @@ static void init(Handle<Object> target){
 
 //	pModule.addMethod("getGlobalList")
 	pModule.addMethod("getFunctionList", &getFunctionList);
+
+	pModule.addMethod("getIntrinsic", &getIntrinsic);
 
 	pModule.addMethod("dump", &dump);
 

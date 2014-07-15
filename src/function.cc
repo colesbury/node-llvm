@@ -70,7 +70,7 @@ static Handle<Value> dump(const Arguments& args){
 
 static void init(Handle<Object> target){
 	pFunction.init(&functionConstructor);
-	pFunction.inherit(pValue);
+	pFunction.inherit(pConstant);
 
 	pFunction.addMethod("_addBasicBlock", &addBasicBlock);
 	pFunction.addMethod("getEntryBlock", &getEntryBlock);

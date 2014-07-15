@@ -14,7 +14,6 @@
         './src/value.cc',
         './src/function.cc',
         './src/type.cc',
-        './src/functiontype.cc',
         './src/executionengine.cc',
         './src/functionpassmanager.cc',
         './src/instructions.cc',
