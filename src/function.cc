@@ -60,6 +60,13 @@ static Handle<Value> getEntryBlock(const Arguments& args){
 	return scope.Close(pBasicBlock.create(ctx, External::New(&BB)));
 }
 
+static Handle<Value> setGC(const Arguments& args){
+	ENTER_METHOD(pFunction, 1);
+	STRING_ARG(str, 0);
+	self->setGC(str.c_str());
+	return scope.Close(Undefined());
+}
+
 static Handle<Value> dump(const Arguments& args){
 	ENTER_METHOD(pFunction, 0);
 	std::string s;
@@ -74,6 +81,7 @@ static void init(Handle<Object> target){
 
 	pFunction.addMethod("_addBasicBlock", &addBasicBlock);
 	pFunction.addMethod("getEntryBlock", &getEntryBlock);
+	pFunction.addMethod("setGC", &setGC);
 	pFunction.addMethod("dump", &dump);
 }
 
