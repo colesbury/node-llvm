@@ -20,6 +20,7 @@ using namespace v8;
 #include "llvm/PassManager.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Bitcode/ReaderWriter.h"
+#include "llvm/Analysis/CallGraphSCCPass.h"
 
 #include "protobuilder.h"
 
@@ -37,6 +38,7 @@ extern Proto<llvm::Type>        pFPType;
 extern Proto<llvm::ArrayType>   pArrayType;
 extern Proto<llvm::FunctionType> pFunctionType;
 extern Proto<llvm::ExecutionEngine> pExecutionEngine;
+extern Proto<llvm::PassManager> pPassManager;
 extern Proto<llvm::FunctionPassManager> pFunctionPassManager;
 extern Proto<llvm::PHINode> pPHINode;
 extern Proto<llvm::SwitchInst> pSwitchInst;
@@ -44,6 +46,7 @@ extern Proto<llvm::Constant>          pConstant;
 extern Proto<llvm::ConstantExpr>      pConstantExpr;
 extern Proto<llvm::ConstantDataArray> pConstantDataArray;
 extern Proto<llvm::GlobalVariable> pGlobalVariable;
+extern Proto<llvm::CallGraphSCCPass>  pCallGraphSCCPass;
 
 // Common constructor for Value and subclasses
 Handle<Value> valueConstructor(const Arguments& args);

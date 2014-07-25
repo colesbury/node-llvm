@@ -15,10 +15,11 @@
         './src/function.cc',
         './src/type.cc',
         './src/executionengine.cc',
-        './src/functionpassmanager.cc',
+        './src/passmanager.cc',
         './src/instructions.cc',
         './src/globals.cc',
         './src/constants.cc',
+        './src/callgraphsccpass.cc',
       ],
       'cflags': [
         '-O3',

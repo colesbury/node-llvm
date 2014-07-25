@@ -4,6 +4,29 @@
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Transforms/Scalar.h"
 
+static Handle<Value> PMConstructor(const Arguments& args){
+	ENTER_CONSTRUCTOR(0);
+
+	auto ee = new llvm::PassManager();
+	pPassManager.wrap(args.This(), ee);
+
+	return scope.Close(args.This());
+}
+
+static Handle<Value> run(const Arguments& args){
+	ENTER_METHOD(pFunctionPassManager, 1);
+	UNWRAP_ARG(pFunction, fn, 0);
+	bool r = self->run(*fn);
+	return scope.Close(Boolean::New(r));
+}
+
+static Handle<Value> add(const Arguments& args){
+	ENTER_METHOD(pPassManager, 1);
+	UNWRAP_ARG(pCallGraphSCCPass, pass, 0);
+	self->add(pass);
+	return scope.Close(Undefined());
+}
+
 static Handle<Value> FPMConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR(1);
 	UNWRAP_ARG(pModule, mod, 0);
@@ -15,14 +38,6 @@ static Handle<Value> FPMConstructor(const Arguments& args){
 	return scope.Close(args.This());
 }
 
-/*
-static Handle<Value> add(const Arguments& args){
-	ENTER_METHOD(pFunctionPassManager, 1);
-	UNWRAP_ARG(pPass, pass, 0);
-	self->add(pass);
-	return scope.Close(Undefined());
-}*/
-
 static Handle<Value> doInit(const Arguments& args){
 	ENTER_METHOD(pFunctionPassManager, 0);
 	self->doInitialization();
@@ -33,13 +48,6 @@ static Handle<Value> doFini(const Arguments& args){
 	ENTER_METHOD(pFunctionPassManager, 0);
 	self->doFinalization();
 	return scope.Close(Undefined());
-}
-
-static Handle<Value> run(const Arguments& args){
-	ENTER_METHOD(pFunctionPassManager, 1);
-	UNWRAP_ARG(pFunction, fn, 0);
-	bool r = self->run(*fn);
-	return scope.Close(Boolean::New(r));
 }
 
 static Handle<Value> addDataLayoutPass(const Arguments& args){
@@ -64,11 +72,15 @@ PASSFN(ReassociatePass);
 PASSFN(GVNPass);
 
 static void init(Handle<Object> target){
+	pPassManager.init(&PMConstructor);
+	pPassManager.addMethod("run", &run);
+	pPassManager.addMethod("add", &add);
+
 	pFunctionPassManager.init(&FPMConstructor);
+	pFunctionPassManager.inherit(pPassManager);
 
 	pFunctionPassManager.addMethod("doInitialization", &doInit);
 	pFunctionPassManager.addMethod("doFinalization", &doFini);
-	pFunctionPassManager.addMethod("run", &run);
 
 	pFunctionPassManager.addMethod("addTargetDataPass", &addDataLayoutPass);
 	pFunctionPassManager.addMethod("addDataLayoutPass", &addDataLayoutPass); // New name in LLVM trunk
@@ -77,7 +89,9 @@ static void init(Handle<Object> target){
 	pFunctionPassManager.addMethod("addReassociatePass", &addReassociatePass);
 	pFunctionPassManager.addMethod("addGVNPass", &addGVNPass);
 
+	pPassManager.addToModule(target);
 	pFunctionPassManager.addToModule(target);
 }
 
-Proto<llvm::FunctionPassManager> pFunctionPassManager("FunctionPassManager", &init);
+Proto<llvm::PassManager> pPassManager("PassManager", &init);
+Proto<llvm::FunctionPassManager> pFunctionPassManager("FunctionPassManager");
