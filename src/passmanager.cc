@@ -13,10 +13,10 @@ static Handle<Value> PMConstructor(const Arguments& args){
 	return scope.Close(args.This());
 }
 
-static Handle<Value> run(const Arguments& args){
-	ENTER_METHOD(pFunctionPassManager, 1);
-	UNWRAP_ARG(pFunction, fn, 0);
-	bool r = self->run(*fn);
+static Handle<Value> runModule(const Arguments& args){
+	ENTER_METHOD(pPassManager, 1);
+	UNWRAP_ARG(pModule, m, 0);
+	bool r = self->run(*m);
 	return scope.Close(Boolean::New(r));
 }
 
@@ -36,6 +36,13 @@ static Handle<Value> FPMConstructor(const Arguments& args){
 	pFunctionPassManager.wrap(args.This(), ee);
 
 	return scope.Close(args.This());
+}
+
+static Handle<Value> runFunction(const Arguments& args){
+	ENTER_METHOD(pFunctionPassManager, 1);
+	UNWRAP_ARG(pFunction, fn, 0);
+	bool r = self->run(*fn);
+	return scope.Close(Boolean::New(r));
 }
 
 static Handle<Value> doInit(const Arguments& args){
@@ -73,12 +80,13 @@ PASSFN(GVNPass);
 
 static void init(Handle<Object> target){
 	pPassManager.init(&PMConstructor);
-	pPassManager.addMethod("run", &run);
+	pPassManager.addMethod("run", &runModule);
 	pPassManager.addMethod("add", &add);
 
 	pFunctionPassManager.init(&FPMConstructor);
 	pFunctionPassManager.inherit(pPassManager);
 
+	pFunctionPassManager.addMethod("run", &runFunction);
 	pFunctionPassManager.addMethod("doInitialization", &doInit);
 	pFunctionPassManager.addMethod("doFinalization", &doFini);
 
