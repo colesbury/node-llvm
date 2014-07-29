@@ -14,10 +14,6 @@ using llvm::PassInfo;
 extern Proto<llvm::CallGraphSCC>  pCallGraphSCC;
 extern Proto<llvm::CallGraphNode>  pCallGraphNode;
 
-namespace llvm {
-	void initializeJSCallGraphSCCPassPass(PassRegistry&);
-}
-
 class JSCallGraphSCCPass : public CallGraphSCCPass {
   public:
 	static char ID;
@@ -33,7 +29,6 @@ class JSCallGraphSCCPass : public CallGraphSCCPass {
 char JSCallGraphSCCPass::ID = 0;
 bool JSCallGraphSCCPass::doInitialization(CallGraph &CG)
 {
-	fprintf(stderr, "doInitialization: %p\n", &CG);
 	return true;
 }
 

@@ -1,4 +1,7 @@
 #include "node-llvm.h"
+#include "llvm/Support/CFG.h"
+
+using llvm::BasicBlock;
 
 static Handle<Value> BBConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR(1);
@@ -23,10 +26,53 @@ static Handle<Value> getTerminator(const Arguments& args){
     return scope.Close(pValue.create(self->getTerminator()));
 }
 
+static Handle<Value> getInstructions(const Arguments& args){
+    ENTER_METHOD(pBasicBlock, 0);
+
+	llvm::BasicBlock::InstListType& list = self->getInstList();
+	Handle<Array> array = Array::New(list.size());
+	unsigned idx = 0;
+	for (auto & I : *self) {
+		array->Set(idx, pValue.create(&I, args.This()));
+		++idx;
+	}
+
+    return scope.Close(array);
+}
+
+static Handle<Value> getPredecessors(Local<String> property, const AccessorInfo &info){
+	ENTER_ACCESSOR(pBasicBlock);
+
+	unsigned idx = 0;
+	Handle<Array> array = Array::New(0);
+	for (llvm::pred_iterator PI = llvm::pred_begin(self), E = llvm::pred_end(self); PI != E; ++PI) {
+		BasicBlock *Pred = *PI;
+		array->Set(idx++, pBasicBlock.create(Undefined(), External::New(Pred)));
+	}
+
+	return scope.Close(array);
+}
+
+static Handle<Value> getSuccessors(Local<String> property, const AccessorInfo &info){
+	ENTER_ACCESSOR(pBasicBlock);
+
+	unsigned idx = 0;
+	Handle<Array> array = Array::New(0);
+	for (llvm::succ_iterator PI = llvm::succ_begin(self), E = llvm::succ_end(self); PI != E; ++PI) {
+		BasicBlock *Pred = *PI;
+		array->Set(idx++, pBasicBlock.create(Undefined(), External::New(Pred)));
+	}
+
+	return scope.Close(array);
+}
+
 static void init(Handle<Object> target){
 	pBasicBlock.init(&BBConstructor);
 	pBasicBlock.inherit(pValue);
     pBasicBlock.addMethod("getTerminator", &getTerminator);
+    pBasicBlock.addMethod("getInstructions", &getInstructions);
+    pBasicBlock.addAccessor("predecessors", &getPredecessors);
+    pBasicBlock.addAccessor("successors", &getSuccessors);
 
 	// getTerminator
 }

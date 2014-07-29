@@ -31,11 +31,25 @@ static Handle<Value> getType(const Arguments& args){
 	return scope.Close(pType.create(type));
 }
 
+static Handle<Value> getUsers(const Arguments& args){
+	ENTER_METHOD(pValue, 0);
+
+	Handle<Array> array = Array::New(self->getNumUses());
+	unsigned idx = 0;
+	for (auto it = self->use_begin(), end = self->use_end(); it != end; ++it) {
+		array->Set(idx, pValue.create(*it, Undefined()));
+		++idx;
+	}
+
+	return scope.Close(array);
+}
+
 static void init(Handle<Object> target){
 	pValue.init(&valueConstructor);
 
 	pValue.addMethod("dump", &dump);
 	pValue.addMethod("getType", &getType);
+	pValue.addMethod("users", &getUsers);
 
 	pValue.addAccessor("name", &getValueName, &setValueName);
 }

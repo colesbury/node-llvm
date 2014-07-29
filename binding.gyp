@@ -20,6 +20,7 @@
         './src/globals.cc',
         './src/constants.cc',
         './src/callgraphsccpass.cc',
+        './src/livenesspass.cc',
       ],
       'cflags': [
         '-O3',

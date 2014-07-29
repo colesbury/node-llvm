@@ -27,6 +27,14 @@ static Handle<Value> add(const Arguments& args){
 	return scope.Close(Undefined());
 }
 
+llvm::Pass* createLivenessPass(const std::vector<llvm::Function*>& fns);
+static Handle<Value> addLivenessPass(const Arguments& args){
+	ENTER_METHOD(pPassManager, 1);
+	ARRAY_UNWRAP_ARG(pFunction, llvm::Function, fns, 0);
+	self->add(createLivenessPass(fns));
+	return scope.Close(args.This());
+}
+
 static Handle<Value> FPMConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR(1);
 	UNWRAP_ARG(pModule, mod, 0);
@@ -82,6 +90,7 @@ static void init(Handle<Object> target){
 	pPassManager.init(&PMConstructor);
 	pPassManager.addMethod("run", &runModule);
 	pPassManager.addMethod("add", &add);
+	pPassManager.addMethod("addLivenessPass", &addLivenessPass);
 
 	pFunctionPassManager.init(&FPMConstructor);
 	pFunctionPassManager.inherit(pPassManager);
