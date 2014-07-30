@@ -11,10 +11,12 @@ using llvm::RegisterPass;
 using llvm::PassRegistry;
 using llvm::PassInfo;
 using llvm::DenseMap;
+using llvm::ValueMap;
 using llvm::SmallPtrSet;
 using llvm::PHINode;
 using llvm::BasicBlock;
 using llvm::Instruction;
+using llvm::CallInst;
 
 class LivenessPass : public FunctionPass {
   public:
@@ -24,6 +26,7 @@ class LivenessPass : public FunctionPass {
 	bool doInitialization(llvm::Module &)  override;
 	bool runOnFunction(llvm::Function &F) override;
 	bool isAllocating(llvm::Function& F);
+	bool isAllocatingCall(llvm::CallInst& I);
   private:
   	std::vector<llvm::Function*> AllocatingFunctions_;
 };
@@ -33,17 +36,31 @@ char LivenessPass::ID = 0;
 struct LiveInfo {
   std::vector<Instruction*> LiveIn;
   std::vector<Instruction*> LiveOut;
+
+  void sort() {
+  	std::sort(LiveIn.begin(), LiveIn.end());
+  	std::sort(LiveOut.begin(), LiveOut.end());
+  }
+
+  bool isLiveIn(Instruction* I) {
+  	return std::binary_search(LiveIn.begin(), LiveIn.end(), I);
+  }
+
+  bool isLiveOut(Instruction* I) {
+  	return std::binary_search(LiveOut.begin(), LiveOut.end(), I);
+  }
 };
 
 class FunctionLiveness {
  public:
-  FunctionLiveness(llvm::Function &F) : F_(&F) {}
+  FunctionLiveness(llvm::Function &F, std::unique_ptr<LiveInfo[]>& info, DenseMap<BasicBlock*, LiveInfo*>& b) : F_(&F), info_(info), blockMap(b) {}
 
-  std::unique_ptr<LiveInfo[]>&&  Run();
+  void Run();
   void Up_and_Mark(BasicBlock* B, Instruction* v, LiveInfo& info);
 
-  DenseMap<BasicBlock*, LiveInfo*> blockMap;
   llvm::Function* F_;
+  std::unique_ptr<LiveInfo[]>& info_;
+  DenseMap<BasicBlock*, LiveInfo*>& blockMap;
 };
 
 
@@ -58,6 +75,53 @@ bool LivenessPass::isAllocating(llvm::Function& F)
 	return std::binary_search(AllocatingFunctions_.begin(), AllocatingFunctions_.end(), &F);
 }
 
+bool LivenessPass::isAllocatingCall(llvm::CallInst& I)
+{
+	if (auto Fn = I.getCalledFunction()) {
+		return isAllocating(*Fn);
+	}
+	return false;
+}
+
+typedef SmallPtrSet<Instruction*, 16> InstSet;
+
+static void findBeforeAndAfter(BasicBlock& BB, Instruction* Needle, InstSet& before, InstSet& usedAfter)
+{
+	bool isBefore = true;
+	for (auto &I : BB) {
+		if (&I == Needle) {
+			isBefore = false;
+			continue;
+		}
+
+		if (isBefore) {
+			before.insert(&I);
+		} else {
+			for (unsigned OpNum = 0, NumOps = I.getNumOperands(); OpNum != NumOps; ++OpNum) {
+				llvm::Value* Op = I.getOperand(OpNum);
+				if (auto OpInst = llvm::dyn_cast<Instruction>(Op)) {
+					usedAfter.insert(OpInst);
+				}
+			}
+		}
+	}
+}
+
+static void findLiveAcross(BasicBlock& BB, LiveInfo& info, Instruction* Needle, InstSet& before, InstSet& usedAfter, InstSet& Live)
+{
+	for (Instruction* Inst : info.LiveIn) {
+		if (info.isLiveOut(Inst) || usedAfter.count(Inst)) {
+			Live.insert(Inst);
+		}
+	}
+	for (auto& Inst : BB) {
+		if (&Inst == Needle) break;
+		if (info.isLiveOut(&Inst) || usedAfter.count(&Inst)) {
+			Live.insert(&Inst);
+		}
+	}
+}
+
 bool LivenessPass::runOnFunction(llvm::Function &F)
 {
 	if (!isAllocating(F)) {
@@ -65,19 +129,44 @@ bool LivenessPass::runOnFunction(llvm::Function &F)
 	}
 	printf("Running on %s\n", F.getName().str().c_str());
 
-	FunctionLiveness liveness(F);
-	std::unique_ptr<LiveInfo[]> info = liveness.Run();
+	std::unique_ptr<LiveInfo[]> info;
+	DenseMap<BasicBlock*, LiveInfo*> blockMap;
+
+	FunctionLiveness liveness(F, info, blockMap);
+	liveness.Run();
+
+	InstSet* live = new InstSet();
+	for (auto &BB : F) {
+		for (auto &I : BB) {
+			if (auto Call = llvm::dyn_cast<CallInst>(&I)) {
+				if (isAllocatingCall(*Call)) {
+					InstSet before;
+					InstSet after;
+
+					findBeforeAndAfter(BB, Call, before, after);
+
+					LiveInfo& info = *blockMap[&BB];
+
+					findLiveAcross(BB, info, Call, before, after, *live);
+				}
+			}
+		}
+	}
+
+	for (Instruction* instr : *live) {
+		instr->dump();
+	}
 
 	return false;
 }
 
-std::unique_ptr<LiveInfo[]>&& FunctionLiveness::Run()
+void FunctionLiveness::Run()
 {
-	std::unique_ptr<LiveInfo[]> infos(new LiveInfo[F_->getBasicBlockList().size()]);
+	info_.reset(new LiveInfo[F_->getBasicBlockList().size()]);
 	{
 		unsigned idx = 0;
 		for (auto &BB : *F_) {
-			blockMap[&BB] = &infos[idx++];
+			blockMap[&BB] = &info_[idx++];
 		}
 	}
 
@@ -102,7 +191,9 @@ std::unique_ptr<LiveInfo[]>&& FunctionLiveness::Run()
 		}
 	}
 
-	return std::move(infos);
+	for (unsigned I = 0, E = F_->getBasicBlockList().size(); I != E; ++I) {
+		info_[I].sort();
+	}
 }
 
 void FunctionLiveness::Up_and_Mark(BasicBlock* B, llvm::Instruction* v, LiveInfo& info)
@@ -116,7 +207,7 @@ void FunctionLiveness::Up_and_Mark(BasicBlock* B, llvm::Instruction* v, LiveInfo
 
 	if (!info.LiveIn.empty() && info.LiveIn.back() == v) return;
 	info.LiveIn.push_back(v);
-	
+
 	for (auto PI = llvm::pred_begin(B), E = llvm::pred_end(B); PI != E; ++PI) {
 		LiveInfo& PredInfo = *blockMap.lookup(*PI);
 		if (PredInfo.LiveOut.empty() || PredInfo.LiveOut.back() != v) PredInfo.LiveOut.push_back(v);
