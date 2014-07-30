@@ -33,14 +33,13 @@ char LivenessPass::ID = 0;
 struct LiveInfo {
   std::vector<Instruction*> LiveIn;
   std::vector<Instruction*> LiveOut;
-  SmallPtrSet<Instruction*, 8> PhiUses;
 };
 
 class FunctionLiveness {
  public:
   FunctionLiveness(llvm::Function &F) : F_(&F) {}
 
-  void Run();
+  std::unique_ptr<LiveInfo[]>&&  Run();
   void Up_and_Mark(BasicBlock* B, Instruction* v, LiveInfo& info);
 
   DenseMap<BasicBlock*, LiveInfo*> blockMap;
@@ -65,15 +64,14 @@ bool LivenessPass::runOnFunction(llvm::Function &F)
 		return false;
 	}
 	printf("Running on %s\n", F.getName().str().c_str());
-	F.dump();
 
 	FunctionLiveness liveness(F);
-	liveness.Run();
+	std::unique_ptr<LiveInfo[]> info = liveness.Run();
 
 	return false;
 }
 
-void FunctionLiveness::Run()
+std::unique_ptr<LiveInfo[]>&& FunctionLiveness::Run()
 {
 	std::unique_ptr<LiveInfo[]> infos(new LiveInfo[F_->getBasicBlockList().size()]);
 	{
@@ -84,33 +82,19 @@ void FunctionLiveness::Run()
 	}
 
 	for (auto &BB : *F_) {
-		Instruction* NonPHI = BB.getFirstNonPHI();
-		for (auto& I : BB) {
-			if (&I == NonPHI) break;
-			auto PN = llvm::cast<PHINode>(&I);
-			for (unsigned i = 0, e = PN->getNumIncomingValues(); i != e; ++i) {
-				BasicBlock* Pred = PN->getIncomingBlock(i);
-				if (auto IV = llvm::dyn_cast<Instruction>(PN->getIncomingValue(i))) {
-					blockMap[Pred]->PhiUses.insert(IV);
-				}
-			}
-		}
-	}
-
-	for (auto &BB : *F_) {
 		for (auto &V : BB) {
 			for (auto it = V.use_begin(), end = V.use_end(); it != end; ++it) {
-				//Check if in PHI-uses
-				if (auto I = llvm::dyn_cast<Instruction>(*it)) {
-					BasicBlock* B = I->getParent();
+				if (auto PN = llvm::dyn_cast<PHINode>(*it)) {
+					BasicBlock* B = PN->getIncomingBlock(it);
 					LiveInfo& info = *blockMap.lookup(B);
 
-					if (info.PhiUses.count(&V)) {
-						auto& LiveOut = info.LiveOut;
-						if (std::find(LiveOut.begin(), LiveOut.end(), &V) != LiveOut.end()) {
-							LiveOut.push_back(&V);
-						}
-					}
+					auto& LiveOut = info.LiveOut;
+					if (LiveOut.empty() || LiveOut.back() != &V) LiveOut.push_back(&V);
+
+					Up_and_Mark(B, &V, info);
+				} else if (auto I = llvm::dyn_cast<Instruction>(*it)) {
+					BasicBlock* B = I->getParent();
+					LiveInfo& info = *blockMap.lookup(B);
 
 					Up_and_Mark(B, &V, info);
 				}
@@ -118,24 +102,21 @@ void FunctionLiveness::Run()
 		}
 	}
 
-	for (auto &BB : *F_) {
-		printf("Live In:\n");
-		for (Instruction* I : blockMap[&BB]->LiveIn) {
-			I->dump();
-		}
-		printf("Live Out:\n");
-		for (Instruction* I : blockMap[&BB]->LiveOut) {
-			I->dump();
-		}
-	}
+	return std::move(infos);
 }
 
 void FunctionLiveness::Up_and_Mark(BasicBlock* B, llvm::Instruction* v, LiveInfo& info)
 {
-	if (v->getParent() == B && !llvm::isa<PHINode>(v)) return;
+	if (v->getParent() == B) {
+		if (llvm::isa<PHINode>(v))
+			if (info.LiveIn.empty() || info.LiveIn.back() != v)
+				info.LiveIn.push_back(v);
+		return;
+	}
+
 	if (!info.LiveIn.empty() && info.LiveIn.back() == v) return;
 	info.LiveIn.push_back(v);
-	if (llvm::isa<PHINode>(v)) return;
+	
 	for (auto PI = llvm::pred_begin(B), E = llvm::pred_end(B); PI != E; ++PI) {
 		LiveInfo& PredInfo = *blockMap.lookup(*PI);
 		if (PredInfo.LiveOut.empty() || PredInfo.LiveOut.back() != v) PredInfo.LiveOut.push_back(v);
