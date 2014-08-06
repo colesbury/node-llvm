@@ -21,7 +21,7 @@ static Handle<Value> dump(const Arguments& args){
 	ENTER_METHOD(pValue, 0);
 	std::string s;
 	llvm::raw_string_ostream stream(s);
-	self->print(stream, NULL);
+	self->print(stream);
 	return scope.Close(String::New(stream.str().c_str()));
 }
 

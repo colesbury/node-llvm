@@ -1,5 +1,5 @@
 #include "node-llvm.h"
-#include "llvm/Support/CFG.h"
+#include "llvm/IR/CFG.h"
 
 using llvm::BasicBlock;
 

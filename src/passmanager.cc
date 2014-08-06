@@ -1,5 +1,5 @@
 #include "node-llvm.h"
-#include "llvm/Analysis/Verifier.h"
+#include "llvm/IR/Verifier.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/IR/DataLayout.h"
 #include "llvm/Transforms/Scalar.h"
@@ -67,8 +67,8 @@ static Handle<Value> doFini(const Arguments& args){
 
 static Handle<Value> addDataLayoutPass(const Arguments& args){
 	ENTER_METHOD(pFunctionPassManager, 1);
-	STRING_ARG(l, 0);
-	self->add(new llvm::DataLayout(l));
+	// STRING_ARG(l, 0);
+	self->add(new llvm::DataLayoutPass());
 	return scope.Close(args.This());
 }
 

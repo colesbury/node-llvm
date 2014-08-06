@@ -67,14 +67,6 @@ static Handle<Value> setGC(const Arguments& args){
 	return scope.Close(Undefined());
 }
 
-static Handle<Value> dump(const Arguments& args){
-	ENTER_METHOD(pFunction, 0);
-	std::string s;
-	llvm::raw_string_ostream stream(s);
-	self->print(stream, NULL);
-	return scope.Close(String::New(stream.str().c_str()));
-}
-
 static void init(Handle<Object> target){
 	pFunction.init(&functionConstructor);
 	pFunction.inherit(pConstant);
@@ -82,7 +74,6 @@ static void init(Handle<Object> target){
 	pFunction.addMethod("_addBasicBlock", &addBasicBlock);
 	pFunction.addMethod("getEntryBlock", &getEntryBlock);
 	pFunction.addMethod("setGC", &setGC);
-	pFunction.addMethod("dump", &dump);
 }
 
 Proto<llvm::Function> pFunction("Function", &init);

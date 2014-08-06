@@ -2,6 +2,9 @@
 #include <llvm/Bitcode/ReaderWriter.h>
 #include <llvm/Support/MemoryBuffer.h>
 
+using llvm::ErrorOr;
+using llvm::MemoryBuffer;
+
 static Handle<Value> contextConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR_POINTER(pContext, 2);
 
@@ -50,19 +53,17 @@ static Handle<Value> loadModule(const Arguments& args){
 	ENTER_METHOD(pContext, 1);
 	STRING_ARG(fileName, 0);
 
-    std::string Error;
-
-    llvm::OwningPtr<llvm::MemoryBuffer> buffer;
-    if (llvm::error_code err = llvm::MemoryBuffer::getFile(fileName, buffer)) {
-    	llvm::report_fatal_error(err.message());
+    auto buffer = MemoryBuffer::getFile(fileName);
+    if (std::error_code ec = buffer.getError()) {
+    	llvm::report_fatal_error(ec.message());
     }
 
-    llvm::Module *m = llvm::ParseBitcodeFile(buffer.get(), *self, &Error);
-    if (!Error.empty()) {
-	    printf("ERROR: %s\n", Error.c_str());
+    auto module = llvm::parseBitcodeFile(buffer.get().get(), *self);
+    if (std::error_code ec = module.getError()) {
+	    printf("ERROR: %s\n", ec.message().c_str());
     }
 
-    return scope.Close(pModule.create(m));
+    return scope.Close(pModule.create(module.get()));
 }
 
 static void init(Handle<Object> target){

@@ -1,4 +1,5 @@
 #include "node-llvm.h"
+#include <llvm/Support/FileSystem.h>
 
 static Handle<Value> ModuleConstructor(const Arguments& args){
 	ENTER_CONSTRUCTOR(1);
@@ -142,7 +143,7 @@ static Handle<Value> writeBitcodeToFile(const Arguments& args){
 	STRING_ARG(filename, 0);
 
 	std::string Err;
-	llvm::raw_fd_ostream out(filename.c_str(), Err);
+	llvm::raw_fd_ostream out(filename.c_str(), Err, llvm::sys::fs::F_None);
 
 	if (!Err.empty()) {
 

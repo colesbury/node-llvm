@@ -1,7 +1,7 @@
 #include "node-llvm.h"
 #include "llvm/Analysis/Passes.h"
 #include "llvm/InitializePasses.h"
-#include "llvm/Support/CFG.h"
+#include "llvm/IR/CFG.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include <algorithm>
 
@@ -29,6 +29,7 @@ class LivenessPass : public FunctionPass {
 	bool isAllocatingCall(llvm::CallInst& I);
   private:
   	std::vector<llvm::Function*> AllocatingFunctions_;
+  	llvm::Type* objectPtrType_;
 };
 
 char LivenessPass::ID = 0;
@@ -64,8 +65,10 @@ class FunctionLiveness {
 };
 
 
-bool LivenessPass::doInitialization(llvm::Module &)
+bool LivenessPass::doInitialization(llvm::Module &M)
 {
+	llvm::Type* objectType = M.getTypeByName("class.russ::Object");
+	objectPtrType_ = objectType->getPointerTo();
 	std::sort(AllocatingFunctions_.begin(), AllocatingFunctions_.end());
 	return false;
 }
@@ -148,13 +151,18 @@ bool LivenessPass::runOnFunction(llvm::Function &F)
 					LiveInfo& info = *blockMap[&BB];
 
 					findLiveAcross(BB, info, Call, before, after, *live);
+
+					Call->getType()->dump();
+					printf("\n");
 				}
 			}
 		}
 	}
 
 	for (Instruction* instr : *live) {
-		instr->dump();
+		if (instr->getType() == objectPtrType_) {
+			// instr->dump();
+		}
 	}
 
 	return false;
@@ -172,16 +180,16 @@ void FunctionLiveness::Run()
 
 	for (auto &BB : *F_) {
 		for (auto &V : BB) {
-			for (auto it = V.use_begin(), end = V.use_end(); it != end; ++it) {
-				if (auto PN = llvm::dyn_cast<PHINode>(*it)) {
-					BasicBlock* B = PN->getIncomingBlock(it);
+			for (auto &use : V.uses()) {
+				if (auto PN = llvm::dyn_cast<PHINode>(use.getUser())) {
+					BasicBlock* B = PN->getIncomingBlock(use);
 					LiveInfo& info = *blockMap.lookup(B);
 
 					auto& LiveOut = info.LiveOut;
 					if (LiveOut.empty() || LiveOut.back() != &V) LiveOut.push_back(&V);
 
 					Up_and_Mark(B, &V, info);
-				} else if (auto I = llvm::dyn_cast<Instruction>(*it)) {
+				} else if (auto I = llvm::dyn_cast<Instruction>(use.getUser())) {
 					BasicBlock* B = I->getParent();
 					LiveInfo& info = *blockMap.lookup(B);
 

@@ -14,11 +14,16 @@ using llvm::PassInfo;
 extern Proto<llvm::CallGraphSCC>  pCallGraphSCC;
 extern Proto<llvm::CallGraphNode>  pCallGraphNode;
 
+namespace llvm {
+	void initializeJSCallGraphSCCPassPass(PassRegistry &Registry);
+}
+
 class JSCallGraphSCCPass : public CallGraphSCCPass {
   public:
 	static char ID;
+	JSCallGraphSCCPass() : CallGraphSCCPass(ID) {}
 	JSCallGraphSCCPass(Persistent<Object> handle) : CallGraphSCCPass(ID), object_(handle) {
-		llvm::initializeCallGraphPass(*PassRegistry::getPassRegistry());
+		llvm::initializeJSCallGraphSCCPassPass(*PassRegistry::getPassRegistry());
 	}
 	bool doInitialization(CallGraph &CG) override;
 	bool runOnSCC(CallGraphSCC &SCC) override;
@@ -114,9 +119,11 @@ Proto<llvm::CallGraphSCCPass> pCallGraphSCCPass("CallGraphSCCPass", init);
 Proto<llvm::CallGraphSCC>     pCallGraphSCC("CallGraphSCC");
 Proto<llvm::CallGraphNode>    pCallGraphNode("CallGraphNode");
 
-// using namespace llvm;
-// INITIALIZE_PASS_BEGIN(JSCallGraphSCCPass, "js-call-graph",
-// 				"Sam's Call Graph Analysis", false, false)
-// INITIALIZE_PASS_DEPENDENCY(CallGraph)
-// INITIALIZE_PASS_END(JSCallGraphSCCPass, "js-call-graph",
-// 				"Sam's Call Graph Analysis", false, false)
+using namespace llvm;
+
+// RegisterPass<
+INITIALIZE_PASS_BEGIN(JSCallGraphSCCPass, "js-call-graph",
+				"Sam's Call Graph Analysis", false, false)
+INITIALIZE_PASS_DEPENDENCY(CallGraphWrapperPass)
+INITIALIZE_PASS_END(JSCallGraphSCCPass, "js-call-graph",
+				"Sam's Call Graph Analysis", false, false)
